@@ -2,12 +2,11 @@ import type {Serialized} from 'extension/types';
 
 import {isHTMLElement} from './isHTMLElement';
 import type {References} from './references';
-import {createReferences} from './references';
 
 export const serialize = <Data extends object>(
   data: Data,
-): [serializedData: Serialized<Data>, references: References] => {
-  const references = createReferences();
+  references: References,
+): Serialized<Data> => {
   const serializedData: Serialized<Data> = JSON.parse(
     JSON.stringify(data, (_, value) => {
       if (isHTMLElement(value)) {
@@ -27,5 +26,5 @@ export const serialize = <Data extends object>(
       return value;
     }),
   );
-  return [serializedData, references];
+  return serializedData;
 };

@@ -6,25 +6,27 @@ import type {References} from './utils/references';
 /**
  * @public
  */
-export type MiddlewareData = {type: `${string}Middleware`};
+export type MiddlewareData = {
+  type: `${string}Middleware`;
+};
 
 export type Data = {type: string};
 
 export type MiddlewareMetadata = {
-  type: 'middleware';
-  serializedData: MiddlewareData;
+  serializedData: MiddlewareData[];
   references: References;
 };
 
 export type Metadata = {
-  type: string;
-  serializedData: object;
+  serializedData: Data[];
   references: References;
 };
 
-export interface HTMLElementWithMetadata extends HTMLElement {
-  [ELEMENT_METADATA]: Metadata;
+export interface HTMLElementWithMetadata<M extends Metadata = Metadata>
+  extends HTMLElement {
+  [ELEMENT_METADATA]: M;
 }
+
 
 declare global {
   interface Window {

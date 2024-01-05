@@ -1,9 +1,14 @@
 import type {Middleware, MiddlewareState} from '@floating-ui/dom';
-import {ELEMENT_METADATA} from 'extension/utils/constants';
-import type {FloatingUIMiddlewareData} from 'extension/views/floating-ui';
 
-import {injectController} from './controller';
+import type {FloatingUIMiddlewareData} from '../../../extension/src/views/floating-ui';
+import {getController} from './controller';
 import type {Metadata, MiddlewareData} from './types';
+import {
+  ELEMENT_METADATA,
+  SERIALIZED_DATA_CHANGE,
+} from 'extension/utils/constants';
+import {isHTMLElementWithMetadata} from './utils/isHTMLElementWithMetadata';
+import {createReferences} from './utils/references';
 import {serialize} from './utils/serialize';
 
 /**
@@ -11,23 +16,40 @@ import {serialize} from './utils/serialize';
  * @public
  */
 export const devtools = (
-  targetDocument: Document,
+  targetDocument = document,
   middlewareDataCallback: (
     state: MiddlewareState,
   ) => MiddlewareData = floatingUIMiddlewareDataCallback,
 ): Middleware => ({
   name: '@floating-ui/devtools',
   fn: (state: MiddlewareState) => {
-    injectController(targetDocument);
-    const [serializedData, references] = serialize(
-      middlewareDataCallback(state),
-    );
-    Object.assign<HTMLElement, {[ELEMENT_METADATA]: Metadata}>(
+    const {[ELEMENT_METADATA]: metadata} = isHTMLElementWithMetadata(
       state.elements.floating,
-      {
-        [ELEMENT_METADATA]: {references, serializedData, type: 'middleware'},
-      },
+    )
+      ? state.elements.floating
+      : Object.assign<HTMLElement, {[ELEMENT_METADATA]: Metadata}>(
+          state.elements.floating,
+          {
+            [ELEMENT_METADATA]: {
+              references: createReferences(),
+              serializedData: [],
+            },
+          },
+        );
+
+    const serializedData = serialize(
+      middlewareDataCallback(state),
+      metadata.references,
     );
+    metadata.serializedData.unshift(serializedData);
+
+    const controller = getController(targetDocument)
+
+    if (
+      metadata.serializedData.length > 1 &&
+      state.elements.floating === controller?.selectedElement
+    ) targetDocument.defaultView?.postMessage(SERIALIZED_DATA_CHANGE);
+
     return {};
   },
 });
